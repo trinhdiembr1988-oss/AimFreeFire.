@@ -25,20 +25,70 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Check project
+      - name: Extract Android project
+        shell: bash
         run: |
+          set -e
+
+          ZIP=$(find . -maxdepth 1 -type f -iname "*.zip" -print -quit)
+
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: Khong tim thay file ZIP"
+            exit 1
+          fi
+
+          echo "Found: $ZIP"
+
+          rm -rf extracted
+          mkdir extracted
+
+          unzip -q "$ZIP" -d extracted
+
+          PROJECT_DIR=$(find extracted -type f \
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            -print -quit | xargs -r dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: ZIP khong chua Android project"
+            find extracted -maxdepth 4 -type f | head -100
+            exit 1
+          fi
+
+          echo "Project: $PROJECT_DIR"
+
+          cp -a "$PROJECT_DIR"/. .
+
+      - name: Check Android project
+        shell: bash
+        run: |
+          set -e
+
+          echo "===== ROOT ====="
           ls -la
+
           echo "===== APP ====="
           ls -la app
-          echo "===== BUILD ====="
-          cat app/build.gradle
+
+          test -f app/build.gradle || \
+          test -f app/build.gradle.kts
+
+          test -f app/src/main/AndroidManifest.xml
+
+          echo "PROJECT OK"
 
       - name: Build APK
+        shell: bash
         run: |
+          set -e
+
           gradle clean assembleDebug \
             --no-daemon \
             --stacktrace \
             --console=plain
+
+      - name: Show APK
+        run: |
+          find app/build/outputs -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
