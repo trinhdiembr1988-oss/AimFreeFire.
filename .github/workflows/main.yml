@@ -11,31 +11,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
-      - name: Check Gradle
-        run: ./gradlew --version
-
-      - name: Clean project
-        run: ./gradlew clean --stacktrace --no-daemon
+      - name: Check project
+        run: |
+          ls -la
+          echo "===== APP ====="
+          ls -la app
+          echo "===== BUILD ====="
+          cat app/build.gradle
 
       - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
-
-      - name: Find APK
         run: |
-          echo "===== APK FILES ====="
-          find app/build/outputs -type f -name "*.apk" -print
+          gradle clean assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            --console=plain
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
