@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build HeadLock V2 Premium
 
 on:
   workflow_dispatch:
@@ -11,22 +11,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Check Gradle
+        run: ./gradlew --version
+
+      - name: Clean project
+        run: ./gradlew clean --stacktrace --no-daemon
 
       - name: Build APK
-        run: gradle clean assembleDebug --no-daemon --stacktrace --console=plain
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Find APK
+        run: |
+          echo "===== APK FILES ====="
+          find app/build/outputs -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
